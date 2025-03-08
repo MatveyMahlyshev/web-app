@@ -12,6 +12,7 @@ from core.models import Base, db_helper
 
 from core.config import settings
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with db_helper.engine.begin() as conn:
@@ -26,18 +27,18 @@ app.include_router(items_router)
 app.include_router(users_router)
 app.include_router(router_v1, prefix=settings.api_v1_prefix)
 
+
 @app.get("/")
 def hello_index():
     return {
         "message": "hello index!",
     }
 
+
 @app.get("/hello/")
 def hello(name: str = "World"):
     name = name.capitalize()
-    return {
-        "message": f"Hello {name}"
-    }
+    return {"message": f"Hello {name}"}
 
 
 @app.post("/calc/add/")
@@ -47,8 +48,6 @@ def add(a: int, b: int):
         "b": b,
         "result": a + b,
     }
-
-
 
 
 if __name__ == "__main__":

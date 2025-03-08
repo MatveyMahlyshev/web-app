@@ -3,7 +3,7 @@
 __all__ = (
     "Base",
     "Product",
-    "db_helper", 
+    "db_helper",
     "DataBaseHelper",
 )
 from .base import Base
