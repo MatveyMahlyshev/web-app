@@ -13,8 +13,8 @@ class DataBaseHelper:
 
         # создание асинхронного движка
         self.engine = create_async_engine(
-            url=settings.db_url,  # добавление адреса бд
-            echo=settings.db_echo,  # логи запросов
+            url=settings.db.url,  # добавление адреса бд
+            echo=settings.db.echo,  # логи запросов
         )
 
         # создание сессии
@@ -39,4 +39,4 @@ class DataBaseHelper:
 
 
 # создание экземпляра класса дбх
-db_helper = DataBaseHelper(url=settings.db_url, echo=settings.db_echo)
+db_helper = DataBaseHelper(url=settings.db.url, echo=settings.db.echo)
