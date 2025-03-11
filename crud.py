@@ -42,13 +42,14 @@ async def show_users_with_profiles(session: AsyncSession) -> list[User]:
     users = await session.scalars(statement=stmt)
     for user in users:
         print(user)
-        print(user.profile)
+        print(user.profile.first_name)
 
 
 async def main():
     async with db_helper.session_factory() as session:
-        # await create_user(session=session, username="Artem")
-        # await create_user(session=session, username="Dmitry")
+
+
+
         await show_users_with_profiles(session=session)
 
 
