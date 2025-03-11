@@ -2,7 +2,7 @@ import asyncio
 from core.models import db_helper, User, Profile, Post
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, Result
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 
 async def create_user(session: AsyncSession, username: str) -> User:
@@ -55,17 +55,58 @@ async def create_post(
     return posts
 
 
+async def get_users_with_posts(session: AsyncSession):
+    stmt = select(User).options(selectinload(User.posts)).order_by(User.id)
+    users = await session.scalars(statement=stmt)
+    for user in users:
+        print("**" * 10)
+        print(user)
+        for post in user.posts:
+            print("-", post)
+
+
+async def get_users_with_posts_and_profile(session: AsyncSession):
+    stmt = (
+        select(User)
+        .options(joinedload(User.profile), selectinload(User.posts))
+        .order_by(User.id)
+    )
+    users = await session.scalars(statement=stmt)
+    for user in users:
+        print("**" * 10)
+        print(user, user.profile and user.profile.last_name)
+        for post in user.posts:
+            print("-", post)
+
+
+async def get_profiles_with_users_and_users_with_posts(session: AsyncSession):
+    stmt = (
+        select(Profile)
+        .join(Profile.user)
+        .options(joinedload(Profile.user).selectinload(User.posts))
+        .order_by(Profile.id)
+        .where(User.username == "Artem")
+    )
+    profiles = await session.scalars(statement=stmt)
+    for profile in profiles:
+        print(profile.first_name, profile.user)
+        print(profile.user.posts)
+
+
+async def get_posts_with_authors(session: AsyncSession, user_id: int) -> list[Post]:
+    stmt = (
+        select(Post)
+        .options(selectinload(Post.user))
+        .where(Post.user_id == user_id)
+        .order_by(Post.title)
+    )
+    posts = list(await session.scalars(statement=stmt))
+    return posts
+
+
 async def main():
     async with db_helper.session_factory() as session:
-        user = await get_user_by_username(session=session, username="Artem")
-
-        await create_post(
-            session,
-            user.id,
-            "fastapi",
-            "django",
-            "alembic",
-        )
+        await get_profiles_with_users_and_users_with_posts(session=session)
 
 
 if __name__ == "__main__":
