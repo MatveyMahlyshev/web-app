@@ -7,7 +7,7 @@ from sqlalchemy import String, Text
 class Post(UserRelationMixin, Base):
 
     _user_back_populates = "posts"
-    _user_id_unique = True
+    _user_id_unique = False
 
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     body: Mapped[str] = mapped_column(
@@ -15,3 +15,9 @@ class Post(UserRelationMixin, Base):
         default="",
         server_default="",
     )
+
+    def __str__(self):
+        return f"{self.__class__.__name__}(id={self.id}, username={self.title})"
+
+    def __repr__(self):
+        return str(self)
