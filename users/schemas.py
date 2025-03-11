@@ -7,7 +7,7 @@ class UserBase(BaseModel):
     username: Annotated[str, MinLen(3), MaxLen(20)]
 
 
-class User(UserBase):
+class UserSchema(UserBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
 
