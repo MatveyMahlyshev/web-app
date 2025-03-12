@@ -15,3 +15,4 @@ from .db_helper import db_helper, DataBaseHelper
 from .user import User
 from .post import Post
 from .profile import Profile
+from .order import Order

@@ -1,9 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, Result
 from sqlalchemy.orm import joinedload, selectinload
+import asyncio
 
-from core.models import User, Profile, Post
+from core.models import User, Profile, Post, db_helper
 from .schemas import CreateUser
+
 
 
 async def create_user(session: AsyncSession, user_in: CreateUser) -> User | None:
@@ -52,9 +54,7 @@ async def create_profile(
 async def show_users_with_profiles(session: AsyncSession) -> list[User]:
     stmt = select(User).options(joinedload(User.profile)).order_by(User.id)
     users = await session.scalars(statement=stmt)
-    for user in users:
-        print(user)
-        print(user.profile.first_name)
+    return users
 
 
 async def create_post(
@@ -114,3 +114,16 @@ async def get_posts_with_authors(session: AsyncSession, user_id: int) -> list[Po
     )
     posts = list(await session.scalars(statement=stmt))
     return posts
+
+async def demo_m2m(session: AsyncSession):
+    pass
+
+
+async def main():
+    async with db_helper.session_factory() as session:
+        pass
+
+
+if __name__ == "__main__":
+    asyncio.run(main=main())
+

@@ -1,6 +1,7 @@
-from .base import Base
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Integer
+
+from .base import Base
 
 
 class Product(Base):
