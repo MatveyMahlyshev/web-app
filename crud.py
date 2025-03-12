@@ -4,8 +4,8 @@ from sqlalchemy.orm import joinedload, selectinload
 import asyncio
 
 from core.models import User, Profile, Post, db_helper
-from .schemas import CreateUser
-
+from users.schemas import CreateUser
+from core.models import Product, Order
 
 
 async def create_user(session: AsyncSession, user_in: CreateUser) -> User | None:
@@ -115,15 +115,85 @@ async def get_posts_with_authors(session: AsyncSession, user_id: int) -> list[Po
     posts = list(await session.scalars(statement=stmt))
     return posts
 
+
+async def create_order(
+    session: AsyncSession,
+    promocode: str | None = None,
+) -> Order:
+    order = Order(promocode=promocode)
+    session.add(order)
+    await session.commit()
+    return order
+
+
+async def create_product(
+    session: AsyncSession,
+    name: str,
+    description: str,
+    price: int,
+) -> Product:
+    product = Product(name=name, description=description, price=price)
+    session.add(product)
+    await session.commit()
+    return product
+
+
+async def get_orders_with_products(session: AsyncSession) -> list[Order]:
+    stmt = select(Order).options(
+        selectinload(Order.products),
+    ).order_by(Order.id)
+
+    orders = await session.scalars(statement=stmt)
+    return list(orders)
+
+
+
 async def demo_m2m(session: AsyncSession):
-    pass
+    order_one = await create_order(session=session)
+    order_promo = await create_order(
+        session=session,
+        promocode="fastapi",
+    )
+    mouse = await create_product(
+        session=session,
+        name="Bloody TL7",
+        description="Great computer mouse!",
+        price=20,
+    )
+    keyboard = await create_product(
+        session=session,
+        name="Redragon ELF",
+        description="Good mechanic keyboard!",
+        price=40,
+    )
+    display = await create_product(
+        session=session,
+        name="Samsung",
+        description="Old monitor()",
+        price=60,
+    )
+    order_one = await session.scalar(
+        select(Order)
+        .where(Order.id == order_one.id)
+        .options(selectinload(Order.products)),
+    )
+    order_promo = await session.scalar(
+        select(Order)
+        .where(Order.id == order_promo.id)
+        .options(selectinload(Order.products)),
+    )
+    order_one.products.append(mouse)
+    order_one.products.append(keyboard)
+    order_promo.products.append(keyboard)
+    order_promo.products.append(display)
+
+    await session.commit()
 
 
 async def main():
     async with db_helper.session_factory() as session:
-        pass
+        await demo_m2m(session=session)
 
 
 if __name__ == "__main__":
     asyncio.run(main=main())
-

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-from users import crud
+from . import crud
 from core.models import db_helper
 from .schemas import UserSchema, CreateUser
 
