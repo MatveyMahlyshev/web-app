@@ -223,6 +223,25 @@ async def demo_get_orders_with_poducts_with_assoc(session: AsyncSession):
             print("-", order_products_details.product.name)
 
 
+async def create_gift(session: AsyncSession):
+    orders = await get_orders_with_products_assoc(session=session)
+    gift_product = await create_product(
+        session=session,
+        name="gift",
+        description="test_gift",
+        price=0,
+    )
+    for order in orders:
+        order.products_deatails.append(
+            OrderProductAssociation(
+                count=1,
+                unit_price=0,
+                product=gift_product,
+            )
+        )
+    await session.commit()
+
+
 async def demo_m2m(session: AsyncSession):
     await demo_get_orders_with_poducts_with_assoc(session=session)
 
