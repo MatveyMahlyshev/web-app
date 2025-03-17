@@ -6,16 +6,15 @@ from sqlalchemy import String, ForeignKey
 from .mixins import UserRelationMixin
 
 
-if TYPE_CHECKING:
-    from .user import User
-
-
 class Profile(UserRelationMixin, Base):
-    
+
     _user_back_populates = "profile"
 
     first_name: Mapped[str | None] = mapped_column(String(50))
     last_name: Mapped[str | None] = mapped_column(String(50))
     bio: Mapped[str | None]
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        unique=True,
+    )

@@ -9,7 +9,10 @@ class Post(UserRelationMixin, Base):
     _user_back_populates = "posts"
     _user_id_unique = False
 
-    title: Mapped[str] = mapped_column(String(100), nullable=False)
+    title: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
     body: Mapped[str] = mapped_column(
         Text,
         default="",

@@ -20,7 +20,10 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(items_router)
 app.include_router(users_router)
-app.include_router(router_v1, prefix=settings.api_v1_prefix)
+app.include_router(
+    router_v1,
+    prefix=settings.api_v1_prefix,
+)
 
 
 @app.get("/")

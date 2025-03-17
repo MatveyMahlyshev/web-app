@@ -22,7 +22,10 @@ async def create_product(
     product_in: ProductCreate,
     session: AsyncSession = Depends(db_helper.scoped_session_dependency),
 ):
-    return await crud.create_product(session=session, product_in=product_in)
+    return await crud.create_product(
+        session=session,
+        product_in=product_in,
+    )
 
 
 @router.get("/{product_id}/", response_model=Product)
@@ -50,7 +53,10 @@ async def update_product_partial(
     session: AsyncSession = Depends(db_helper.scoped_session_dependency),
 ):
     return await crud.update_product(
-        session=session, product=product, product_update=product_update, partial=True
+        session=session,
+        product=product,
+        product_update=product_update,
+        partial=True,
     )
 
 
@@ -59,4 +65,7 @@ async def delete_product(
     product: Product = Depends(product_by_id),
     session: AsyncSession = Depends(db_helper.scoped_session_dependency),
 ) -> None:
-    return await crud.delete_product(session=session, product=product)
+    return await crud.delete_product(
+        session=session,
+        product=product,
+    )

@@ -5,7 +5,7 @@ import asyncio
 
 from core.models import User, Profile, Post, db_helper
 from users.schemas import CreateUser
-from core.models import Product, Order
+from core.models import Product, Order, OrderProductAssociation
 
 
 async def create_user(session: AsyncSession, user_in: CreateUser) -> User | None:
@@ -138,17 +138,7 @@ async def create_product(
     return product
 
 
-async def get_orders_with_products(session: AsyncSession) -> list[Order]:
-    stmt = select(Order).options(
-        selectinload(Order.products),
-    ).order_by(Order.id)
-
-    orders = await session.scalars(statement=stmt)
-    return list(orders)
-
-
-
-async def demo_m2m(session: AsyncSession):
+async def create_orders_and_products(session: AsyncSession):
     order_one = await create_order(session=session)
     order_promo = await create_order(
         session=session,
@@ -188,6 +178,53 @@ async def demo_m2m(session: AsyncSession):
     order_promo.products.append(display)
 
     await session.commit()
+
+
+async def get_orders_with_products(session: AsyncSession) -> list[Order]:
+    stmt = (
+        select(Order)
+        .options(
+            selectinload(Order.products),
+        )
+        .order_by(Order.id)
+    )
+
+    orders = await session.scalars(statement=stmt)
+    return list(orders)
+
+
+async def get_orders_with_products_assoc(session: AsyncSession) -> list[Order]:
+    stmt = (
+        select(Order)
+        .options(
+            selectinload(Order.products_deatails).joinedload(
+                OrderProductAssociation.product
+            ),
+        )
+        .order_by(Order.id)
+    )
+
+    orders = await session.scalars(statement=stmt)
+    return list(orders)
+
+
+async def demo_get_orders_with_products_through_secondary(session: AsyncSession):
+    orders = await get_orders_with_products(session=session)
+    for order in orders:
+        for product in order.products:
+            print("order_id:", order.id, "product:", product.name)
+
+
+async def demo_get_orders_with_poducts_with_assoc(session: AsyncSession):
+    orders = await get_orders_with_products_assoc(session=session)
+    for order in orders:
+        print(order.id, order.promocode, order.created_at, "\nproducts: ")
+        for order_products_details in order.products_deatails:
+            print("-", order_products_details.product.name)
+
+
+async def demo_m2m(session: AsyncSession):
+    await demo_get_orders_with_poducts_with_assoc(session=session)
 
 
 async def main():

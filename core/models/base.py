@@ -5,7 +5,8 @@ class Base(DeclarativeBase):
     __abstract__ = True  # указание абстрактности
 
     id: Mapped[int] = mapped_column(
-        primary_key=True, autoincrement=True
+        primary_key=True,
+        autoincrement=True,
     )  # поле id у каждой таблицы
 
     # имя таблицы от имени класса
