@@ -31,7 +31,7 @@ class OrderProductAssociation(Base):
     )
     unit_price: Mapped[int] = mapped_column(
         default=1,
-        server_default=0,
+        server_default="0",
     )
 
     order: Mapped["Order"] = relationship(back_populates="products_deatails")
