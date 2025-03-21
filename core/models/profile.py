@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from .base import Base
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, ForeignKey
 from .mixins import UserRelationMixin
 
