@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-from .. import crud
+from . import crud
 from core.models import db_helper
 from .schemas import UserSchema, CreateUser
 
@@ -33,7 +33,7 @@ async def create_user(
 
 
 @router.get(
-    "/id/{user_id}",
+    "/id/{user_id}/",
     response_model=UserSchema,
 )
 async def get_user_by_id(
@@ -47,7 +47,7 @@ async def get_user_by_id(
 
 
 @router.get(
-    "/username/{username}",
+    "/username/{username}/",
     response_model=UserSchema,
 )
 async def get_user_by_username(
