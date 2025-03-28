@@ -1,7 +1,15 @@
-from fastapi import HTTPException, Depends, status, Header
+from fastapi import HTTPException, Depends, status, Header, Response, Cookie
+from fastapi.security import (
+    HTTPBasic,
+    HTTPBasicCredentials,
+)
+from typing import (
+    Annotated,
+    Any,
+)
 import secrets
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from typing import Annotated
+import uuid
+
 
 security = HTTPBasic()
 
@@ -14,6 +22,13 @@ auth_token_to_username = {
     "070b2c340ab59b5acbd66a02665ec": "admin",
     "83ca796283326cb7b92ddba915aa9c6b582": "mat",
 }
+
+COOKIES: dict[str, dict[str, Any]] = {}
+COOKIES_SESSION_ID_KEY = "web-app-session-id"
+
+
+def generate_session_id() -> str:
+    return uuid.uuid4().hex
 
 
 def get_auth_user_username(
@@ -44,3 +59,14 @@ def get_username_by_static_auth_token(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid token",
     )
+
+
+def get_session_data(
+    session_id: str = Cookie(alias=COOKIES_SESSION_ID_KEY),
+) -> dict:
+    if session_id not in COOKIES:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="not authenticated",
+        )
+    return COOKIES[session_id]
