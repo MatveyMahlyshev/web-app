@@ -13,14 +13,6 @@ bd_users = {
 }
 
 
-@router.get("/basic-auth/")
-def demo_basic_auth_credentials(
-    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
-):
-
-    pass
-
-
 def get_auth_user_username(
     credentials: Annotated[HTTPBasicCredentials, Depends(security)],
 ):
@@ -46,3 +38,4 @@ def demo_basic_auth_username(
     return {
         "message": f"Hi, {auth_username}",
     }
+
