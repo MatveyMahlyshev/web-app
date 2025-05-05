@@ -15,3 +15,10 @@ class UserSchema(UserBase):
 class CreateUser(UserBase):
     pass
 
+
+class UserAuthSchema(BaseModel):
+    model_config = ConfigDict(strict=True)
+    username: str
+    password: bytes
+    email: EmailStr | None = None
+    active: bool = True
