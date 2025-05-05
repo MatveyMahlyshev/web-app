@@ -7,7 +7,7 @@ from fastapi import (
     Cookie,
     Form,
 )
-
+from datetime import timedelta
 from jwt.exceptions import InvalidTokenError
 from fastapi.security import (
     HTTPBasic,
@@ -25,11 +25,17 @@ import uuid
 
 from users.schemas import UserAuthSchema
 from auth import utils as auth_utils
+from core.config import settings
+
+
+TOKEN_TYPE_FIELD = "type"
+ACCESS_TOKEN_TYPE = "access"
+REFRESH_TOKEN_TYPE = "refresh"
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/api/v1/jwt/login/",
 )
-http_bearer = HTTPBearer()
+http_bearer = HTTPBearer(auto_error=False)
 
 security = HTTPBasic()
 
@@ -135,10 +141,8 @@ def validate_auth_user(
 
 
 def get_current_token_payload(
-    # creds: HTTPAuthorizationCredentials = Depends(http_bearer),
     token: str = Depends(oauth2_scheme),
 ) -> UserAuthSchema:
-    # token = creds.credentials
     try:
         payload = auth_utils.decode_jwt(
             token=token,
@@ -151,16 +155,59 @@ def get_current_token_payload(
     return payload
 
 
-def get_current_auth_user(
-    payload: dict = Depends(get_current_token_payload),
-) -> UserAuthSchema:
+def validate_token_type(
+    payload: dict,
+    token_type: str,
+) -> bool:
+    if payload.get(TOKEN_TYPE_FIELD) == token_type:
+        return True
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Error type of token.",
+    )
+
+
+def get_user_by_token_sub(payload: dict) -> UserAuthSchema:
     username: str | None = payload.get("sub")
     if user := users_db.get(username):
         return user
     raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
+        status_code=status.HTTP_401_UNAUTHORIZED,
         detail="token invalid",
     )
+
+
+def get_current_auth_user(
+    payload: dict = Depends(get_current_token_payload),
+) -> UserAuthSchema:
+    validate_token_type(
+        payload=payload,
+        token_type=ACCESS_TOKEN_TYPE,
+    )
+    return get_user_by_token_sub(payload=payload)
+
+
+def get_current_auth_user_for_refresh(
+    payload: dict = Depends(get_current_token_payload),
+) -> UserAuthSchema:
+    validate_token_type(payload=payload, token_type=REFRESH_TOKEN_TYPE)
+    return get_user_by_token_sub(payload=payload)
+
+
+def get_auth_user_from_token_of_type(token_type: str):
+    def get_auth_user_from_token(
+        payload: dict = Depends(get_current_token_payload),
+    ) -> UserAuthSchema:
+        validate_token_type(
+            payload=payload,
+            token_type=token_type,
+        )
+        return get_user_by_token_sub(payload=payload)
+    return get_auth_user_from_token
+
+get_current_auth_user = get_auth_user_from_token_of_type(token_type=ACCESS_TOKEN_TYPE)
+get_current_auth_user_for_refresh = get_auth_user_from_token_of_type(token_type=REFRESH_TOKEN_TYPE)
+
 
 
 def get_current_active_auth_user(user: UserAuthSchema = Depends(get_current_auth_user)):
@@ -169,4 +216,46 @@ def get_current_active_auth_user(user: UserAuthSchema = Depends(get_current_auth
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Not active user",
+    )
+
+
+
+
+
+def create_token(
+    token_type: str,
+    token_data: dict,
+    expire_minutes: int = settings.auth_jwt.access_token_expire_minutes,
+    expire_timedelta: timedelta | None = None,
+) -> str:
+    jwt_payload = {TOKEN_TYPE_FIELD: token_type}
+    jwt_payload.update(token_data)
+    return auth_utils.encode_jwt(
+        payload=jwt_payload,
+        expire_minutes=expire_minutes,
+        expire_timedelta=expire_timedelta,
+    )
+
+
+def create_access_token(user: UserAuthSchema) -> str:
+    jwt_payload = {
+        "sub": user.username,
+        "username": user.username,
+        "email": user.email,
+    }
+    return create_token(
+        token_type=ACCESS_TOKEN_TYPE,
+        token_data=jwt_payload,
+        expire_minutes=settings.auth_jwt.access_token_expire_minutes,
+    )
+
+
+def create_refresh_token(user: UserAuthSchema) -> str:
+    jwt_payload = {
+        "sub": user.username,
+    }
+    return create_token(
+        token_type=REFRESH_TOKEN_TYPE,
+        token_data=jwt_payload,
+        expire_timedelta=timedelta(days=settings.auth_jwt.refresh_token_expire_days),
     )
