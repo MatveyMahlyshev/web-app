@@ -1,7 +1,20 @@
-from fastapi import HTTPException, Depends, status, Header, Response, Cookie
+from fastapi import (
+    HTTPException,
+    Depends,
+    status,
+    Header,
+    Response,
+    Cookie,
+    Form,
+)
+
+from jwt.exceptions import InvalidTokenError
 from fastapi.security import (
     HTTPBasic,
     HTTPBasicCredentials,
+    HTTPBearer,
+    HTTPAuthorizationCredentials,
+    OAuth2PasswordBearer,
 )
 from typing import (
     Annotated,
@@ -10,6 +23,13 @@ from typing import (
 import secrets
 import uuid
 
+from users.schemas import UserAuthSchema
+from auth import utils as auth_utils
+
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/api/v1/jwt/login/",
+)
+http_bearer = HTTPBearer()
 
 security = HTTPBasic()
 
@@ -25,6 +45,24 @@ auth_token_to_username = {
 
 COOKIES: dict[str, dict[str, Any]] = {}
 COOKIES_SESSION_ID_KEY = "web-app-session-id"
+
+john = UserAuthSchema(
+    username="John",
+    password=auth_utils.hash_password("QwertyUiop44"),
+    email="john@asdsad.ru",
+)
+
+matthew = UserAuthSchema(
+    username="Matthew",
+    password=auth_utils.hash_password("Adepaz17_"),
+    email="matthew@asdsad.ru",
+)
+
+
+users_db: dict[str, UserAuthSchema] = {}
+
+users_db[john.username] = john
+users_db[matthew.username] = matthew
 
 
 def generate_session_id() -> str:
@@ -70,3 +108,65 @@ def get_session_data(
             detail="not authenticated",
         )
     return COOKIES[session_id]
+
+
+def validate_auth_user(
+    username: str = Form(),
+    password: str = Form(),
+):
+    unauthed_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not correct username or password",
+    )
+    if not (user := users_db.get(username)):
+        raise unauthed_exception
+
+    if not auth_utils.validate_password(
+        password=password,
+        hashed_password=user.password,
+    ):
+        raise unauthed_exception
+    if not user.active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="user inactive",
+        )
+    return user
+
+
+def get_current_token_payload(
+    # creds: HTTPAuthorizationCredentials = Depends(http_bearer),
+    token: str = Depends(oauth2_scheme),
+) -> UserAuthSchema:
+    # token = creds.credentials
+    try:
+        payload = auth_utils.decode_jwt(
+            token=token,
+        )
+    except InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid token error {e}",
+        )
+    return payload
+
+
+def get_current_auth_user(
+    payload: dict = Depends(get_current_token_payload),
+) -> UserAuthSchema:
+    username: str | None = payload.get("sub")
+    if user := users_db.get(username):
+        return user
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="token invalid",
+    )
+
+
+def get_current_active_auth_user(user: UserAuthSchema = Depends(get_current_auth_user)):
+    if user.active:
+        return user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Not active user",
+    )
